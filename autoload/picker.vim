@@ -114,62 +114,6 @@ function! s:CloseWindowAndDeleteBuffer() abort
     close!
 endfunction
 
-function! s:PickerTermopen(list_command, vim_command, callback) abort
-    " Open a Neovim terminal emulator buffer in a new window using termopen,
-    " execute list_command piping its output to the fuzzy selector, and call
-    " callback.on_select with the item selected by the user as the first
-    " argument.
-    "
-    " Parameters
-    " ----------
-    " list_command : String
-    "     Shell command to generate list user will choose from.
-    " vim_command : String
-    "     Readable representation of the Vim command which will be
-    "     invoked against the user's selection, for display in the
-    "     statusline.
-    " callback.on_select : String -> Void
-    "     Function executed with the item selected by the user as the
-    "     first argument.
-    let l:callback = {
-                \ 'window_id': win_getid(),
-                \ 'filename': tempname(),
-                \ 'callback': a:callback
-                \ }
-
-    let l:directory = getcwd()
-    if has_key(a:callback, 'options')
-                \ && has_key(a:callback.options, 'cwd')
-                \ && isdirectory(a:callback.options.cwd)
-        let l:callback['cwd'] = a:callback.options.cwd
-        let l:directory = a:callback.options.cwd
-    endif
-
-    function! l:callback.on_exit(job_id, data, event) abort
-        call s:CloseWindowAndDeleteBuffer()
-        call win_gotoid(l:self.window_id)
-        if filereadable(l:self.filename)
-            try
-                call l:self.callback.on_select(readfile(l:self.filename)[0])
-            catch /E684/
-            endtry
-            call delete(l:self.filename)
-        endif
-    endfunction
-
-    execute g:picker_split g:picker_height . 'new'
-    let l:term_command = a:list_command . '|'
-                \ . g:picker_selector_executable .  ' '
-                \ . g:picker_selector_flags .
-                \ '>' . l:callback.filename
-    let s:picker_job_id = termopen(l:term_command, l:callback)
-    let b:picker_statusline = 'Picker [command: ' . a:vim_command .
-                \ ', directory: ' . l:directory . ']'
-    setlocal nonumber norelativenumber statusline=%{b:picker_statusline}
-    setfiletype picker
-    startinsert
-endfunction
-
 function! s:PickerTermStart(list_command, vim_command, callback) abort
     " Open a Vim terminal emulator buffer in a new window using term_start,
     " execute list_command piping its output to the fuzzy selector, and call
@@ -214,7 +158,7 @@ function! s:PickerTermStart(list_command, vim_command, callback) abort
     endfunction
 
     let l:options = {
-                \ 'curwin': 1,
+				\ 'hidden': 1,
                 \ 'exit_cb': l:callback.exit_cb,
                 \ }
 
@@ -222,55 +166,34 @@ function! s:PickerTermStart(list_command, vim_command, callback) abort
         let l:options.cwd = l:directory
     endif
 
-    execute g:picker_split g:picker_height . 'new'
     let l:term_command = a:list_command . '|'
                 \ . g:picker_selector_executable .  ' '
                 \ . g:picker_selector_flags .
                 \ '>' . l:callback.filename
     let s:picker_buf_num = term_start([&shell, &shellcmdflag, l:term_command],
                 \ l:options)
-    let b:picker_statusline = 'Picker [command: ' . a:vim_command .
-                \ ', directory: ' . l:directory . ']'
-    setlocal nonumber norelativenumber statusline=%{b:picker_statusline}
+
+    "let b:picker_statusline = 'Picker [command: ' . a:vim_command .
+    "            \ ', directory: ' . l:directory . ']'
+    setlocal nonumber norelativenumber 
     setfiletype picker
-    startinsert
-endfunction
-
-function! s:PickerSystemlist(list_command, callback) abort
-    " Execute list_command in a shell, piping its output to the fuzzy
-    " selector, and call callback.on_select with the line selected by
-    " the user as the first argument.
-    "
-    " Parameters
-    " ----------
-    " list_command : String
-    "     Shell command to generate list user will choose from.
-    " callback.on_select : String -> Void
-    "     Function executed with the item selected by the user as the
-    "     first argument.
-    let l:directory = getcwd()
-    if has_key(a:callback, 'options')
-                \ && has_key(a:callback.options, 'cwd')
-                \ && isdirectory(a:callback.options.cwd)
-        let l:directory = a:callback.options.cwd
-    endif
-
-    let l:command = 'cd ' . fnameescape(l:directory) . ' && '
-                \ . a:list_command . '|'
-                \ . g:picker_selector_executable . ' '
-                \ . g:picker_selector_flags
-    try
-        call a:callback.on_select(systemlist(l:command)[0])
-    catch /E684/
-    endtry
-    redraw!
+	let s:winid = popup_create(s:picker_buf_num, {
+       \ 'minwidth': &columns * 67 / 100,
+       \ 'maxwidth': &columns * 67 / 100,
+       \ 'minheight': &lines * 33 / 100,
+       \ 'maxheight': &lines * 33 / 100,
+       \ 'border': [],
+       \ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+       \ 'borderhighlight': ['Statement'],
+       \ 'padding': [0,1,0,1],
+       \ 'highlight': 'Todo'
+       \ })
+	"Optionally set the 'Normal' color for the terminal buffer
+    " hi Normal ctermbg=lightblue guibg=lightblue
+	" call setwinvar(winid, '&wincolor', 'Normal')
 endfunction
 
 function! s:Picker(list_command, vim_command, callback) abort
-    " Invoke callback.on_select on the line of output of list_command
-    " selected by the user, using PickerTermopen() in Neovim and
-    " PickerSystemlist() otherwise.
-    "
     " Parameters
     " ----------
     " list_command : String
@@ -287,13 +210,7 @@ function! s:Picker(list_command, vim_command, callback) abort
         return
     endif
 
-    if exists('*termopen')
-        call s:PickerTermopen(a:list_command, a:vim_command, a:callback)
-    elseif exists('*term_start')
-        call s:PickerTermStart(a:list_command, a:vim_command, a:callback)
-    else
-        call s:PickerSystemlist(a:list_command, a:callback)
-    endif
+    call s:PickerTermStart(a:list_command, a:vim_command, a:callback)
 endfunction
 
 function! s:PickString(list_command, vim_command) abort
@@ -461,9 +378,6 @@ endfunction
 
 function! picker#Close() abort
     " Send SIGTERM to the currently running fuzzy selector process.
-    if exists('*jobstop')
-        call jobstop(s:picker_job_id)
-    elseif exists('*job_stop')
-        call job_stop(term_getjob(s:picker_buf_num))
-    endif
+    call job_stop(term_getjob(s:picker_buf_num))
+	call popup_close(s:winid)
 endfunction

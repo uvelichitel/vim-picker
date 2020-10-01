@@ -68,22 +68,6 @@ else
     let g:picker_selector_flags = '--lines=' . &lines
 endif
 
-if exists('g:picker_split')
-    if !picker#IsString(g:picker_split)
-        echoerr 'vim-picker: g:picker_split must be a string'
-    endif
-else
-    let g:picker_split = 'botright'
-endif
-
-if exists('g:picker_height')
-    if !picker#IsNumber(g:picker_height)
-        echoerr 'vim-picker: g:picker_height must be a number'
-    endif
-else
-    let g:picker_height = 10
-endif
-
 command -bar -nargs=? -complete=dir PickerEdit call picker#Edit(<q-args>)
 command -bar -nargs=? -complete=dir PickerSplit call picker#Split(<q-args>)
 command -bar -nargs=? -complete=dir PickerTabedit call picker#Tabedit(<q-args>)
