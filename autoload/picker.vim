@@ -332,24 +332,6 @@ function! picker#Edit(...) abort
     call s:PickFile(s:ListFilesCommand(l:dir), 'edit', {'cwd': l:dir})
 endfunction
 
-function! picker#Split(...) abort
-    " Run fuzzy selector to choose a file and call split on it.
-    let l:dir = s:GetDirectoryFromArgs(a:000)
-    call s:PickFile(s:ListFilesCommand(l:dir), 'split', {'cwd': l:dir})
-endfunction
-
-function! picker#Tabedit(...) abort
-    " Run fuzzy selector to choose a file and call tabedit on it.
-    let l:dir = s:GetDirectoryFromArgs(a:000)
-    call s:PickFile(s:ListFilesCommand(l:dir), 'tabedit', {'cwd': l:dir})
-endfunction
-
-function! picker#Vsplit(...) abort
-    " Run fuzzy selector to choose a file and call vsplit on it.
-    let l:dir = s:GetDirectoryFromArgs(a:000)
-    call s:PickFile(s:ListFilesCommand(l:dir), 'vsplit', {'cwd': l:dir})
-endfunction
-
 function! picker#Buffer() abort
     " Run fuzzy selector to choose a buffer and call buffer on it.
     call s:PickFile(s:ListBuffersCommand(), 'buffer')

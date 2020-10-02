@@ -69,9 +69,6 @@ else
 endif
 
 command -bar -nargs=? -complete=dir PickerEdit call picker#Edit(<q-args>)
-command -bar -nargs=? -complete=dir PickerSplit call picker#Split(<q-args>)
-command -bar -nargs=? -complete=dir PickerTabedit call picker#Tabedit(<q-args>)
-command -bar -nargs=? -complete=dir PickerVsplit call picker#Vsplit(<q-args>)
 command -bar PickerBuffer call picker#Buffer()
 command -bar PickerTag call picker#Tag()
 command -bar PickerStag call picker#Stag()
@@ -80,9 +77,6 @@ command -bar PickerHelp call picker#Help()
 command -bar PickerListUserCommands call picker#ListUserCommands()
 
 nnoremap <silent> <Plug>(PickerEdit) :PickerEdit<CR>
-nnoremap <silent> <Plug>(PickerSplit) :PickerSplit<CR>
-nnoremap <silent> <Plug>(PickerTabedit) :PickerTabedit<CR>
-nnoremap <silent> <Plug>(PickerVsplit) :PickerVsplit<CR>
 nnoremap <silent> <Plug>(PickerBuffer) :PickerBuffer<CR>
 nnoremap <silent> <Plug>(PickerTag) :PickerTag<CR>
 nnoremap <silent> <Plug>(PickerStag) :PickerStag<CR>
